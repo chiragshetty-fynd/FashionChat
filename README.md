@@ -14,13 +14,13 @@
 git clone https://github.com/chiragshetty-fynd/FashionChat.git
 
 # Go to directory
-cd visual-chatgpt
+cd FashionChat
 
 # create a new environment
-conda create -n visgpt python=3.8
+conda create -n fashion_chat python=3.8
 
 # activate the new environment
-conda activate visgpt
+conda activate fashion_chat
 
 #  prepare the basic environments
 pip install -r requirements.txt
