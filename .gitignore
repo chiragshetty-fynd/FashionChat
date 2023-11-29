@@ -1,5 +1,8 @@
+*.pt
 *.pyc
 *.png
 *.jpg
 *.jpeg
 *.DS_Store
+
+checkpoints/*
