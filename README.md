@@ -42,13 +42,13 @@ set OPENAI_API_KEY={Your_Private_Openai_Key}
 # You can use: "ImageCaptioning_cpu,Text2Image_cuda:0"
 
 # Advice for CPU Users
-python fashion_forge.py --load ImageCaptioning_cpu,Text2Image_cpu
+python fashion_chat.py --load ImageCaptioning_cpu,Text2Image_cpu
 
 # Advice for 1 Tesla T4 15GB  (Google Colab)                       
-python fashion_forge.py --load "ImageCaptioning_cuda:0,Text2Image_cuda:0"
+python fashion_chat.py --load "ImageCaptioning_cuda:0,Text2Image_cuda:0"
                                 
 # Advice for 4 Tesla V100 32GB                            
-python fashion_forge.py --load "Text2Box_cuda:0,Segmenting_cuda:0,
+python fashion_chat.py --load "Text2Box_cuda:0,Segmenting_cuda:0,
     Inpainting_cuda:0,ImageCaptioning_cuda:0,
     Text2Image_cuda:1,Image2Canny_cpu,CannyText2Image_cuda:1,
     Image2Depth_cpu,DepthText2Image_cuda:1,VisualQuestionAnswering_cuda:2,
