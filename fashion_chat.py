@@ -350,15 +350,17 @@ class CannyText2Image:
     def __init__(self, device):
         print(f"Initializing CannyText2Image to {device}")
         self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
+        # self.controlnet = ControlNetModel.from_pretrained(
+        #     "fusing/stable-diffusion-v1-5-controlnet-canny",
+        #     torch_dtype=self.torch_dtype,
+        # )
         self.controlnet = ControlNetModel.from_pretrained(
-            "fusing/stable-diffusion-v1-5-controlnet-canny",
-            torch_dtype=self.torch_dtype,
+            "lllyasviel/sd-controlnet-canny",
+            torch_dtype=self.torch_dtype
         )
-        # self.controlnet = ControlNetModel.from_pretrained("lllyasviel/sd-controlnet-canny",
-        #                                                   torch_dtype=self.torch_dtype)
         self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
-            # "runwayml/stable-diffusion-v1-5",
-            "CompVis/stable-diffusion-v1-4",
+            "runwayml/stable-diffusion-v1-5",
+            # "CompVis/stable-diffusion-v1-4",
             controlnet=self.controlnet,
             safety_checker=StableDiffusionSafetyChecker.from_pretrained(
                 "CompVis/stable-diffusion-safety-checker"
@@ -412,7 +414,7 @@ class CannyText2Image:
 class Image2Line:
     def __init__(self, device):
         print("Initializing Image2Line")
-        self.detector = MLSDdetector.from_pretrained("lllyasviel/ControlNet")
+        self.detector = MLSDdetector.from_pretrained("lllyasviel/Annotators")
 
     @prompts(
         name="Line Detection On Image",
@@ -495,7 +497,7 @@ class LineText2Image:
 class Image2Hed:
     def __init__(self, device):
         print("Initializing Image2Hed")
-        self.detector = HEDdetector.from_pretrained("lllyasviel/ControlNet")
+        self.detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
 
     @prompts(
         name="Hed Detection On Image",
@@ -578,7 +580,7 @@ class HedText2Image:
 class Image2Scribble:
     def __init__(self, device):
         print("Initializing Image2Scribble")
-        self.detector = HEDdetector.from_pretrained("lllyasviel/ControlNet")
+        self.detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
 
     @prompts(
         name="Sketch Detection On Image",
@@ -603,11 +605,13 @@ class ScribbleText2Image:
         print(f"Initializing ScribbleText2Image to {device}")
         self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
         self.controlnet = ControlNetModel.from_pretrained(
-            "fusing/stable-diffusion-v1-5-controlnet-scribble",
+            # "fusing/stable-diffusion-v1-5-controlnet-scribble",
+            "lllyasviel/sd-controlnet-scribble",
             torch_dtype=self.torch_dtype,
         )
         self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
+            # "CompVis/stable-diffusion-v1-4",
             controlnet=self.controlnet,
             safety_checker=StableDiffusionSafetyChecker.from_pretrained(
                 "CompVis/stable-diffusion-safety-checker"
@@ -1915,7 +1919,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load",
         type=str,
-        default="ImageCaptioning_cuda:0,Text2Image_cuda:0,CannyText2Image_cuda:1,ScribbleText2Image_cuda:1,Image2Canny_cpu,Image2Line_cpu,Image2Hed_cpu,Image2Scribble_cpu,Image2Pose_cpu,Image2Depth_cpu,Image2Normal_cpu",
+        default="ImageCaptioning_cuda:1,Text2Image_cuda:1,ScribbleText2Image_cuda:0,CannyText2Image_cuda:0,Image2Canny_cpu,Image2Line_cpu,Image2Hed_cpu,Image2Scribble_cpu,Image2Pose_cpu,Image2Depth_cpu,Image2Normal_cpu",
     )
     args = parser.parse_args()
     load_dict = {
@@ -1923,8 +1927,8 @@ if __name__ == "__main__":
     }
     bot = ConversationBot(load_dict=load_dict)
     with gr.Blocks(css="#chatbot .overflow-y-auto{height:500px}") as demo:
-        lang = gr.Radio(choices=["English"], value="English", label="Language")
-        chatbot = gr.Chatbot(elem_id="chatbot", label="Visual ChatGPT")
+        lang = gr.Radio(choices=["English", "Chinese"], value=None, label="Language")
+        chatbot = gr.Chatbot(elem_id="chatbot", label="FashionChat")
         state = gr.State([])
         with gr.Row(visible=False) as input_raws:
             with gr.Column(scale=0.7):
