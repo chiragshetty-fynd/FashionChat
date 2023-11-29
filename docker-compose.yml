@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  fashion_chat:
+    image: fashion_chat:v0
+    runtime: nvidia
+    env_file: .env
+    container_name: fashion_chat
+    volumes:
+      - ./:/workspace
+    ports:
+      - 54063:8080
+    expose:
+      - 80
+      - 8080

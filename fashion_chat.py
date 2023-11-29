@@ -1919,7 +1919,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load",
         type=str,
-        default="ImageCaptioning_cuda:1,Text2Image_cuda:1,ScribbleText2Image_cuda:0,CannyText2Image_cuda:0,Image2Canny_cpu,Image2Line_cpu,Image2Hed_cpu,Image2Scribble_cpu,Image2Pose_cpu,Image2Depth_cpu,Image2Normal_cpu",
+        default="ImageCaptioning_cuda:0,Text2Image_cuda:0,ScribbleText2Image_cuda:0,CannyText2Image_cuda:0,Image2Canny_cpu,Image2Line_cpu,Image2Hed_cpu,Image2Scribble_cpu,Image2Pose_cpu,Image2Depth_cpu,Image2Normal_cpu",
     )
     args = parser.parse_args()
     load_dict = {
@@ -1948,4 +1948,4 @@ if __name__ == "__main__":
         clear.click(bot.memory.clear)
         clear.click(lambda: [], None, chatbot)
         clear.click(lambda: [], None, state)
-    demo.launch(server_name="0.0.0.0", server_port=53223)
+    demo.launch(server_name="0.0.0.0", server_port=8080)

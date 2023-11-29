@@ -17,7 +17,7 @@ kornia
 numpy
 omegaconf
 open_clip_torch
-openai
+openai==0.28.0
 opencv-python
 prettytable
 safetensors
