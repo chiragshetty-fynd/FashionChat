@@ -43,7 +43,7 @@ The thoughts and observations are only visible for Visual ChatGPT, Visual ChatGP
 Thought: Do I need to use a tool? {agent_scratchpad} Let's think step by step.
 """
 
-CSS ="""
+CSS = """
 .contain { display: flex; flex-direction: column; }
 .gradio-container { height: 100vh !important; }
 #component-0 { height: 100%; }

@@ -1695,8 +1695,8 @@ class ConversationBot:
         mask_filename = image_filename.replace(".png", "_mask.png")
         rgba_filename = image_filename.replace(".png", "_rgba.png")
         print("======>Auto Resize Image...")
-        img = inputs['image']
-        msk = inputs['mask']
+        img = inputs["image"]
+        msk = inputs["mask"]
         width, height = img.size
         ratio = min(512 / width, 512 / height)
         width_new, height_new = (round(width * ratio), round(height * ratio))
@@ -1754,7 +1754,7 @@ if __name__ == "__main__":
             with gr.Column(scale=0.15, min_width=0):
                 btn = gr.UploadButton(label="🖼️", file_types=["image"])
             with gr.Row():
-                msk = gr.Image(source = 'upload', tool = 'sketch', type = 'pil')
+                msk = gr.Image(source="upload", tool="sketch", type="pil")
                 create_msk = gr.Button("Create Mask")
         start.click(bot.init_agent, [], [inputs, start, txt, clear])
         txt.submit(bot.run_text, [txt, state], [chatbot, state])
