@@ -57,236 +57,21 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import wget
-
-VISUAL_CHATGPT_PREFIX = """Visual ChatGPT is designed to be able to assist with a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. Visual ChatGPT is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
-
-Visual ChatGPT is able to process and understand large amounts of text and images. As a language model, Visual ChatGPT can not directly read images, but it has a list of tools to finish different visual tasks. Each image will have a file name formed as "image/xxx.png", and Visual ChatGPT can invoke different tools to indirectly understand pictures. When talking about images, Visual ChatGPT is very strict to the file name and will never fabricate nonexistent files. When using tools to generate new image files, Visual ChatGPT is also known that the image may not be the same as the user's demand, and will use other visual question answering tools or description tools to observe the real image. Visual ChatGPT is able to use tools in a sequence, and is loyal to the tool observation outputs rather than faking the image content and image file name. It will remember to provide the file name from the last tool observation, if a new image is generated.
-
-Human may provide new figures to Visual ChatGPT with a description. The description helps Visual ChatGPT to understand this image, but Visual ChatGPT should use tools to finish following tasks, rather than directly imagine from the description.
-
-Overall, Visual ChatGPT is a powerful visual dialogue assistant tool that can help with a wide range of tasks and provide valuable insights and information on a wide range of topics. 
-
-
-TOOLS:
-------
-
-Visual ChatGPT  has access to the following tools:"""
-
-VISUAL_CHATGPT_FORMAT_INSTRUCTIONS = """To use a tool, please use the following format:
-
-```
-Thought: Do I need to use a tool? Yes
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-```
-
-When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
-
-```
-Thought: Do I need to use a tool? No
-{ai_prefix}: [your response here]
-```
-"""
-
-VISUAL_CHATGPT_SUFFIX = """You are very strict to the filename correctness and will never fake a file name if it does not exist.
-You will remember to provide the image file name loyally if it's provided in the last tool observation.
-
-Begin!
-
-Previous conversation history:
-{chat_history}
-
-New input: {input}
-Since Visual ChatGPT is a text language model, Visual ChatGPT must use tools to observe images rather than imagination.
-The thoughts and observations are only visible for Visual ChatGPT, Visual ChatGPT should remember to repeat important information in the final response for Human. 
-Thought: Do I need to use a tool? {agent_scratchpad} Let's think step by step.
-"""
-
-os.makedirs("image", exist_ok=True)
-
-
-def seed_everything(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    return seed
-
-
-def prompts(name, description):
-    def decorator(func):
-        func.name = name
-        func.description = description
-        return func
-
-    return decorator
-
-
-def blend_gt2pt(old_image, new_image, sigma=0.15, steps=100):
-    new_size = new_image.size
-    old_size = old_image.size
-    easy_img = np.array(new_image)
-    gt_img_array = np.array(old_image)
-    pos_w = (new_size[0] - old_size[0]) // 2
-    pos_h = (new_size[1] - old_size[1]) // 2
-
-    kernel_h = cv2.getGaussianKernel(old_size[1], old_size[1] * sigma)
-    kernel_w = cv2.getGaussianKernel(old_size[0], old_size[0] * sigma)
-    kernel = np.multiply(kernel_h, np.transpose(kernel_w))
-
-    kernel[steps:-steps, steps:-steps] = 1
-    kernel[:steps, :steps] = kernel[:steps, :steps] / kernel[steps - 1, steps - 1]
-    kernel[:steps, -steps:] = kernel[:steps, -steps:] / kernel[steps - 1, -(steps)]
-    kernel[-steps:, :steps] = kernel[-steps:, :steps] / kernel[-steps, steps - 1]
-    kernel[-steps:, -steps:] = kernel[-steps:, -steps:] / kernel[-steps, -steps]
-    kernel = np.expand_dims(kernel, 2)
-    kernel = np.repeat(kernel, 3, 2)
-
-    weight = np.linspace(0, 1, steps)
-    top = np.expand_dims(weight, 1)
-    top = np.repeat(top, old_size[0] - 2 * steps, 1)
-    top = np.expand_dims(top, 2)
-    top = np.repeat(top, 3, 2)
-
-    weight = np.linspace(1, 0, steps)
-    down = np.expand_dims(weight, 1)
-    down = np.repeat(down, old_size[0] - 2 * steps, 1)
-    down = np.expand_dims(down, 2)
-    down = np.repeat(down, 3, 2)
-
-    weight = np.linspace(0, 1, steps)
-    left = np.expand_dims(weight, 0)
-    left = np.repeat(left, old_size[1] - 2 * steps, 0)
-    left = np.expand_dims(left, 2)
-    left = np.repeat(left, 3, 2)
-
-    weight = np.linspace(1, 0, steps)
-    right = np.expand_dims(weight, 0)
-    right = np.repeat(right, old_size[1] - 2 * steps, 0)
-    right = np.expand_dims(right, 2)
-    right = np.repeat(right, 3, 2)
-
-    kernel[:steps, steps:-steps] = top
-    kernel[-steps:, steps:-steps] = down
-    kernel[steps:-steps, :steps] = left
-    kernel[steps:-steps, -steps:] = right
-
-    pt_gt_img = easy_img[pos_h : pos_h + old_size[1], pos_w : pos_w + old_size[0]]
-    gaussian_gt_img = (
-        kernel * gt_img_array + (1 - kernel) * pt_gt_img
-    )  # gt img with blur img
-    gaussian_gt_img = gaussian_gt_img.astype(np.int64)
-    easy_img[pos_h : pos_h + old_size[1], pos_w : pos_w + old_size[0]] = gaussian_gt_img
-    gaussian_img = Image.fromarray(easy_img)
-    return gaussian_img
-
-
-def cut_dialogue_history(history_memory, keep_last_n_words=500):
-    if history_memory is None or len(history_memory) == 0:
-        return history_memory
-    tokens = history_memory.split()
-    n_tokens = len(tokens)
-    print(f"history_memory:{history_memory}, n_tokens: {n_tokens}")
-    if n_tokens < keep_last_n_words:
-        return history_memory
-    paragraphs = history_memory.split("\n")
-    last_n_tokens = n_tokens
-    while last_n_tokens >= keep_last_n_words:
-        last_n_tokens -= len(paragraphs[0].split(" "))
-        paragraphs = paragraphs[1:]
-    return "\n" + "\n".join(paragraphs)
-
-
-def get_new_image_name(org_img_name, func_name="update"):
-    head_tail = os.path.split(org_img_name)
-    head = head_tail[0]
-    tail = head_tail[1]
-    name_split = tail.split(".")[0].split("_")
-    this_new_uuid = str(uuid.uuid4())[:4]
-    if len(name_split) == 1:
-        most_org_file_name = name_split[0]
-    else:
-        assert len(name_split) == 4
-        most_org_file_name = name_split[3]
-    recent_prev_file_name = name_split[0]
-    new_file_name = (
-        f"{this_new_uuid}_{func_name}_{recent_prev_file_name}_{most_org_file_name}.png"
-    )
-    return os.path.join(head, new_file_name)
-
-
-class InstructPix2Pix:
-    def __init__(self, device):
-        print(f"Initializing InstructPix2Pix to {device}")
-        self.device = device
-        self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
-
-        self.pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(
-            "timbrooks/instruct-pix2pix",
-            safety_checker=StableDiffusionSafetyChecker.from_pretrained(
-                "CompVis/stable-diffusion-safety-checker"
-            ),
-            torch_dtype=self.torch_dtype,
-        ).to(device)
-        self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(
-            self.pipe.scheduler.config
-        )
-
-    @prompts(
-        name="Instruct Image Using Text",
-        description="useful when you want to the style of the image to be like the text. "
-        "like: make it look like a painting. or make it like a robot. "
-        "The input to this tool should be a comma separated string of two, "
-        "representing the image_path and the text. ",
-    )
-    def inference(self, inputs):
-        """Change style of image."""
-        print("===>Starting InstructPix2Pix Inference")
-        image_path, text = inputs.split(",")[0], ",".join(inputs.split(",")[1:])
-        original_image = Image.open(image_path)
-        image = self.pipe(
-            text, image=original_image, num_inference_steps=40, image_guidance_scale=1.2
-        ).images[0]
-        updated_image_path = get_new_image_name(image_path, func_name="pix2pix")
-        image.save(updated_image_path)
-        print(
-            f"\nProcessed InstructPix2Pix, Input Image: {image_path}, Instruct Text: {text}, "
-            f"Output Image: {updated_image_path}"
-        )
-        return updated_image_path
-
-
-class Text2Image:
-    def __init__(self, device):
-        print(f"Initializing Text2Image to {device}")
-        self.device = device
-        self.torch_dtype = torch.float16 if "cuda" in device else torch.float32
-        self.pipe = StableDiffusionPipeline.from_pretrained(
-            "runwayml/stable-diffusion-v1-5", torch_dtype=self.torch_dtype
-        )
-        self.pipe.to(device)
-        self.a_prompt = "best quality, extremely detailed"
-        self.n_prompt = (
-            "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, "
-            "fewer digits, cropped, worst quality, low quality"
-        )
-
-    @prompts(
-        name="Generate Image From User Input Text",
-        description="useful when you want to generate an image from a user input text and save it to a file. "
-        "like: generate an image of an object or something, or generate an image that includes some objects. "
-        "The input to this tool should be a string, representing the text used to generate image. ",
-    )
-    def inference(self, text):
-        image_filename = os.path.join("image", f"{str(uuid.uuid4())[:8]}.png")
-        prompt = text + ", " + self.a_prompt
-        image = self.pipe(prompt, negative_prompt=self.n_prompt).images[0]
-        image.save(image_filename)
-        print(
-            f"\nProcessed Text2Image, Input Text: {text}, Output Image: {image_filename}"
-        )
-        return image_filename
+from tools import InstructPix2Pix, Text2Image
+from tools.utils import (
+    prompts,
+    rgb2rgba,
+    blend_gt2pt,
+    seed_everything,
+    get_new_image_name,
+    cut_dialogue_history,
+)
+from tools.consts import (
+    CSS,
+    FASHION_CHAT_PREFIX,
+    FASHION_CHAT_FORMAT_INSTRUCTIONS,
+    FASHION_CHAT_SUFFIX,
+)
 
 
 class ImageCaptioning:
@@ -355,8 +140,7 @@ class CannyText2Image:
         #     torch_dtype=self.torch_dtype,
         # )
         self.controlnet = ControlNetModel.from_pretrained(
-            "lllyasviel/sd-controlnet-canny",
-            torch_dtype=self.torch_dtype
+            "lllyasviel/sd-controlnet-canny", torch_dtype=self.torch_dtype
         )
         self.pipe = StableDiffusionControlNetPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
@@ -1838,13 +1622,8 @@ class ConversationBot:
             memory_key="chat_history", output_key="output"
         )
 
-    def init_agent(self, lang):
+    def init_agent(self):
         self.memory.clear()  # clear previous history
-        PREFIX, FORMAT_INSTRUCTIONS, SUFFIX = (
-            VISUAL_CHATGPT_PREFIX,
-            VISUAL_CHATGPT_FORMAT_INSTRUCTIONS,
-            VISUAL_CHATGPT_SUFFIX,
-        )
         place = "Enter text and press enter, or upload an image"
         label_clear = "Clear"
         self.agent = initialize_agent(
@@ -1855,9 +1634,9 @@ class ConversationBot:
             memory=self.memory,
             return_intermediate_steps=True,
             agent_kwargs={
-                "prefix": PREFIX,
-                "format_instructions": FORMAT_INSTRUCTIONS,
-                "suffix": SUFFIX,
+                "prefix": FASHION_CHAT_PREFIX,
+                "format_instructions": FASHION_CHAT_FORMAT_INSTRUCTIONS,
+                "suffix": FASHION_CHAT_SUFFIX,
             },
         )
         return (
@@ -1885,7 +1664,7 @@ class ConversationBot:
         )
         return state, state
 
-    def run_image(self, image, state, txt, lang):
+    def run_image(self, image, state, txt):
         image_filename = os.path.join("image", f"{str(uuid.uuid4())[:8]}.png")
         print("======>Auto Resize Image...")
         img = Image.open(image.name)
@@ -1911,6 +1690,38 @@ class ConversationBot:
         )
         return state, state, f"{txt} {image_filename} "
 
+    def run_image_mask(self, inputs, state, txt):
+        image_filename = os.path.join("image", f"{str(uuid.uuid4())[:8]}.png")
+        mask_filename = image_filename.replace(".png", "_mask.png")
+        rgba_filename = image_filename.replace(".png", "_rgba.png")
+        print("======>Auto Resize Image...")
+        img = inputs['image']
+        msk = inputs['mask']
+        width, height = img.size
+        ratio = min(512 / width, 512 / height)
+        width_new, height_new = (round(width * ratio), round(height * ratio))
+        width_new = int(np.round(width_new / 64.0)) * 64
+        height_new = int(np.round(height_new / 64.0)) * 64
+        img = img.resize((width_new, height_new)).convert("RGB")
+        msk = msk.resize((width_new, height_new)).convert("RGB")
+        rgba = rgb2rgba(img, msk)
+        img.save(image_filename, "PNG")
+        msk.save(mask_filename, "PNG")
+        rgba.save(rgba_filename, "PNG")
+        print(f"Resize image form {width}x{height} to {width_new}x{height_new}")
+        description = self.models["ImageCaptioning"].inference(image_filename)
+        Human_prompt = f'\nHuman: provide a figure named {image_filename}. The description is: {description}. This information helps you to understand this image, but you should use tools to finish following tasks, rather than directly imagine from my description. If you understand, say "Received". \n'
+        AI_prompt = "Received.  "
+        self.agent.memory.buffer = (
+            self.agent.memory.buffer + Human_prompt + "AI: " + AI_prompt
+        )
+        state = state + [(f"![](file={rgba_filename})*{rgba_filename}*", AI_prompt)]
+        print(
+            f"\nProcessed run_image, Input image: {image_filename}\nCurrent state: {state}\n"
+            f"Current Memory: {self.agent.memory.buffer}"
+        )
+        return state, state, f"{txt} {image_filename} {mask_filename}"
+
 
 if __name__ == "__main__":
     if not os.path.exists("checkpoints"):
@@ -1926,11 +1737,13 @@ if __name__ == "__main__":
         e.split("_")[0].strip(): e.split("_")[1].strip() for e in args.load.split(",")
     }
     bot = ConversationBot(load_dict=load_dict)
-    with gr.Blocks(css="#chatbot .overflow-y-auto{height:500px}") as demo:
-        lang = gr.Radio(choices=["English", "Chinese"], value=None, label="Language")
+
+    # with gr.Blocks(css="#chatbot .overflow-y-auto{height:500px}") as demo:
+    with gr.Blocks(css=CSS) as demo:
+        start = gr.Button("Load Agent")
         chatbot = gr.Chatbot(elem_id="chatbot", label="FashionChat")
         state = gr.State([])
-        with gr.Row(visible=False) as input_raws:
+        with gr.Row(visible=False) as inputs:
             with gr.Column(scale=0.7):
                 txt = gr.Textbox(
                     show_label=False,
@@ -1940,11 +1753,14 @@ if __name__ == "__main__":
                 clear = gr.Button("Clear")
             with gr.Column(scale=0.15, min_width=0):
                 btn = gr.UploadButton(label="🖼️", file_types=["image"])
-
-        lang.change(bot.init_agent, [lang], [input_raws, lang, txt, clear])
+            with gr.Row():
+                msk = gr.Image(source = 'upload', tool = 'sketch', type = 'pil')
+                create_msk = gr.Button("Create Mask")
+        start.click(bot.init_agent, [], [inputs, start, txt, clear])
         txt.submit(bot.run_text, [txt, state], [chatbot, state])
         txt.submit(lambda: "", None, txt)
-        btn.upload(bot.run_image, [btn, state, txt, lang], [chatbot, state, txt])
+        btn.upload(bot.run_image, [btn, state, txt], [chatbot, state, txt])
+        create_msk.click(bot.run_image_mask, [msk, state, txt], [chatbot, state, txt])
         clear.click(bot.memory.clear)
         clear.click(lambda: [], None, chatbot)
         clear.click(lambda: [], None, state)

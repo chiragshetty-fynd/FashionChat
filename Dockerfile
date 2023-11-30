@@ -72,16 +72,13 @@ RUN pip install -r requirements.txt && \
     pip install mediapipe
 
 RUN mkdir -p /workspace
-
-COPY fashion_chat.py workspace/
-COPY download_models.py workspace/
-
 WORKDIR /workspace
+COPY . .
 
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
+ARG OPENAI_API_KEY
 ENV NVIDIA_VISIBLE_DEVICES=all
-ENV OPENAI_API_KEY=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
-
+ENV OPENAI_API_KEY=$OPENAI_API_KEY
+ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 RUN python download_models.py
 
 CMD ["python", "fashion_chat.py"]

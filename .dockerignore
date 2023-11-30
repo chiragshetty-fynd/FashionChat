@@ -1,0 +1,10 @@
+*.pt
+*.pyc
+*.png
+*.jpg
+*.jpeg
+*.DS_Store
+
+.git
+checkpoints/*
+.ipynb_checkpoints/*
