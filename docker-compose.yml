@@ -2,14 +2,29 @@ version: '3.8'
 
 services:
   fashion_chat:
-    image: fashion_chat:v0
+    image: fashion_chat:v1
     runtime: nvidia
     env_file: .env
     container_name: fashion_chat
+    command: sleep infinity
     volumes:
       - ./:/workspace
+      - ./image:/workspace/image
     ports:
       - 54063:8080
     expose:
       - 80
       - 8080
+    restart: "always"
+
+  openai_hub:
+    image: openai_hub:v1
+    env_file: .env
+    container_name: openai_hub
+    volumes:
+      - ./image:/workspace/image
+    ports:
+      - 80:80
+    expose:
+      - 80
+    restart: "always"

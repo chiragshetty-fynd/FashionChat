@@ -71,7 +71,10 @@ RUN pip install -r requirements.txt && \
     pip install git+https://github.com/facebookresearch/segment-anything.git \
     pip install mediapipe
 
-RUN mkdir -p /workspace
+RUN pip uninstall -y torch diffusers && \
+    pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu118 && \
+    pip install diffusers
+
 WORKDIR /workspace
 COPY . .
 
@@ -81,4 +84,4 @@ ENV OPENAI_API_KEY=$OPENAI_API_KEY
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 RUN python download_models.py
 
-CMD ["python", "fashion_chat.py"]
+CMD ["python", "main.py"]

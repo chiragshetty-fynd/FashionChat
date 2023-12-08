@@ -1,11 +1,12 @@
 import torch
 from PIL import Image
-from .utils import prompts, get_new_image_name
 from diffusers import (
     StableDiffusionInstructPix2PixPipeline,
     EulerAncestralDiscreteScheduler,
 )
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
+
+from ..utils import prompts, get_new_image_name
 
 
 class InstructPix2Pix:

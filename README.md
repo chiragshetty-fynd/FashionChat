@@ -1,15 +1,14 @@
 # FashionChat
 
 **DISCLAIMER**:
-- This a forked and modified version of [TaskMatrix](https://github.com/moymix/TaskMatrix) all credit goes to TaskMatrix and team for creating the UI and adding support for most of the tools used in this repo.  
 
+- This a forked and modified version of [TaskMatrix](https://github.com/moymix/TaskMatrix) (previously named as Visual ChatGPT) all credit goes to TaskMatrix and team for creating the UI and adding support for most of the tools used in this repo.
 
 **FashionChat** connects ChatGPT and a series of Visual Foundation Models to enable **sending** and **receiving** images during chatting.
 
-
 ## Quick Start
 
-```
+```shell
 # clone the repo
 git clone https://github.com/chiragshetty-fynd/FashionChat.git
 
@@ -42,13 +41,13 @@ set OPENAI_API_KEY={Your_Private_Openai_Key}
 # You can use: "ImageCaptioning_cpu,Text2Image_cuda:0"
 
 # Advice for CPU Users
-python fashion_chat.py --load ImageCaptioning_cpu,Text2Image_cpu
+python main.py --load ImageCaptioning_cpu,Text2Image_cpu
 
 # Advice for 1 Tesla T4 15GB  (Google Colab)                       
-python fashion_chat.py --load "ImageCaptioning_cuda:0,Text2Image_cuda:0"
+python main.py --load "ImageCaptioning_cuda:0,Text2Image_cuda:0"
                                 
 # Advice for 4 Tesla V100 32GB                            
-python fashion_chat.py --load "Text2Box_cuda:0,Segmenting_cuda:0,
+python main.py --load "Text2Box_cuda:0,Segmenting_cuda:0,
     Inpainting_cuda:0,ImageCaptioning_cuda:0,
     Text2Image_cuda:1,Image2Canny_cpu,CannyText2Image_cuda:1,
     Image2Depth_cpu,DepthText2Image_cuda:1,VisualQuestionAnswering_cuda:2,
@@ -60,6 +59,7 @@ python fashion_chat.py --load "Text2Box_cuda:0,Segmenting_cuda:0,
 ```
 
 ## GPU memory usage
+
 Here we list the GPU memory usage of each visual foundation model, you can specify which one you like:
 
 | Foundation Model        | GPU Memory (MB) |
@@ -87,6 +87,7 @@ Here we list the GPU memory usage of each visual foundation model, you can speci
 | VisualQuestionAnswering| 1495            |
 
 ## Acknowledgement
+
 We appreciate the open source of the following projects:
 
 [Hugging Face](https://github.com/huggingface) &#8194;
