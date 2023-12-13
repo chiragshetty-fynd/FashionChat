@@ -23,7 +23,9 @@ class VirtualTryon:
             #     "CompVis/stable-diffusion-safety-checker"
             # ),
         ).to(device)
-        self.tryon.scheduler = UniPCMultistepScheduler.from_config(self.tryon.scheduler.config)
+        self.tryon.scheduler = UniPCMultistepScheduler.from_config(
+            self.tryon.scheduler.config
+        )
         self.a_prompt = "best quality, extremely detailed, realistic"
         self.n_prompt = (
             "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, "
@@ -56,10 +58,10 @@ class VirtualTryon:
         num_inference_steps=50,
         attention_auto_machine_weight=1.0,
         gn_auto_machine_weight=1.0,
-        style_fidelity=0.5,
-        guidance_scale=7.5,
+        style_fidelity=0.95,
+        guidance_scale=6.5,
         reference_attn=True,
-        reference_adain=False
+        reference_adain=False,
     ):
         image_path, prompt = inputs.split(",")[0], ",".join(inputs.split(",")[1:])
         description = self.image_captioning.inference(image_path)

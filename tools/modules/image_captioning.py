@@ -17,7 +17,7 @@ class ImageCaptioning:
         self.model = BlipForConditionalGeneration.from_pretrained(
             # "Salesforce/blip-image-captioning-base",
             "Salesforce/blip-image-captioning-large",
-            torch_dtype=self.torch_dtype
+            torch_dtype=self.torch_dtype,
         ).to(self.device)
 
     @prompts(
@@ -35,5 +35,6 @@ class ImageCaptioning:
             f"\nProcessed ImageCaptioning, Input Image: {image_path}, Output Text: {captions}"
         )
         return captions
+
 
 image_captioning = ImageCaptioning("cuda:0")

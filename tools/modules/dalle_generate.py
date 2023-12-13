@@ -7,6 +7,7 @@ from ..utils import prompts
 
 class DalleGenerate:
     def __init__(self, device):
+        self.device = device
         self.url = "http://openai_hub:80/generate"
         self.headers = {
             "Content-Type": "application/x-www-form-urlencoded",

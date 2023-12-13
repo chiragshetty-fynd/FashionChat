@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import uuid
 import inspect
 import numpy as np
@@ -58,14 +59,17 @@ class ConversationBot:
             e.split("_")[0].strip(): e.split("_")[1].strip()
             for e in load_dict.split(",")
         }
-        print(f"Initializing FashionChat, load_dict={load_dict}")
-        if "ImageCaptioning" not in load_dict:
-            # del load_dict["ImageCaptioning"]
-            raise ValueError(
-                "You have to load ImageCaptioning as a basic function for FashionChat"
-            )
+        self.image_captioning = image_captioning
+        print(
+            f"Initializing FashionChat,\nload_dict=\n{json.dumps(load_dict, indent=2)}"
+        )
+        if "ImageCaptioning" in load_dict:
+            del load_dict["ImageCaptioning"]
+            # raise ValueError(
+            #     "You have to load ImageCaptioning as a basic function for FashionChat"
+            # )
 
-        self.models = {} #{ "ImageCaptioning": image_captioning }
+        self.models = {"ImageCaptioning": image_captioning}
         # Load Basic Foundation Models
         for class_name, device in load_dict.items():
             self.models[class_name] = globals()[class_name](device=device)
@@ -102,7 +106,7 @@ class ConversationBot:
     def init_agent(self):
         self.memory.clear()  # clear previous history
         place = "Enter text and press enter, or upload an image"
-        label_clear = "Clear"
+        label_clear = "Clear Chat"
         self.agent = initialize_agent(
             self.tools,
             self.llm,
@@ -121,12 +125,29 @@ class ConversationBot:
             gr.update(visible=False),
             gr.update(placeholder=place),
             gr.update(value=label_clear),
+            gr.update(value="Male"),  # Gender
+            gr.update(value="Cotton"),  # Fabric
+            gr.update(value="T-Shirt"),  # Clothing Type
+            gr.update(value="Black"),  # Color
+            gr.update(value="Plain"),  # Pattern
         )
 
-    def run_text(self, text, state):
+    def run_text(
+        self,
+        text,
+        state,
+        use_conditioning,
+        gender,
+        fabric,
+        clothing_type,
+        color,
+        pattern,
+    ):
         self.agent.memory.buffer = cut_dialogue_history(
             self.agent.memory.buffer, keep_last_n_words=500
         )
+        if use_conditioning:
+            text = f"{text}, a {clothing_type} for a {gender} made of {fabric} with {color} color and {pattern} pattern"
         res = self.agent({"input": text.strip()})
         res["output"] = res["output"].replace("\\", "/")
         response = re.sub(
@@ -154,7 +175,7 @@ class ConversationBot:
         img = img.convert("RGB")
         img.save(image_filename, "PNG")
         print(f"Resize image form {width}x{height} to {width_new}x{height_new}")
-        description = self.models["ImageCaptioning"].inference(image_filename)
+        description = self.image_captioning.inference(image_filename)
         Human_prompt = f'\nHuman: provide a figure named {image_filename}. The description is: {description}. This information helps you to understand this image, but you should use tools to finish following tasks, rather than directly imagine from my description. If you understand, say "Received". \n'
         AI_prompt = "Received.  "
         self.agent.memory.buffer = (
@@ -165,7 +186,7 @@ class ConversationBot:
             f"\nProcessed run_image, Input image: {image_filename}\nCurrent state: {state}\n"
             f"Current Memory: {self.agent.memory.buffer}"
         )
-        return state, state, f"{txt} {image_filename} "
+        return state, state, f"{image_filename} {txt}"
 
     def run_image_mask(self, inputs, state, txt):
         image_filename = os.path.join("image", f"{str(uuid.uuid4())[:8]}.png")
@@ -197,4 +218,4 @@ class ConversationBot:
             f"\nProcessed run_image, Input image: {image_filename}\nCurrent state: {state}\n"
             f"Current Memory: {self.agent.memory.buffer}"
         )
-        return state, state, f"{txt} {image_filename} "
+        return state, state, f"{image_filename} {txt}"

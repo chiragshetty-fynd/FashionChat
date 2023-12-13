@@ -26,5 +26,6 @@ from .sdvideo import SDVideo
 from .segmenting import Segmenting
 from .text2box import Text2Box
 from .text2image import Text2Image
-from .virtual_tryon import VirtualTryon
+# from .virtual_tryon import VirtualTryon
+from .virtual_tryonv2 import VirtualTryon
 from .visual_question_answering import VisualQuestionAnswering

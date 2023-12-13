@@ -15,6 +15,7 @@ class SDVideo:
 
         self.pipe = StableVideoDiffusionPipeline.from_pretrained(
             "stabilityai/stable-video-diffusion-img2vid-xt",
+            # "stabilityai/stable-video-diffusion-img2vid",
             torch_dtype=self.torch_dtype,
             variant="fp16",
             safety_checker=StableDiffusionSafetyChecker.from_pretrained(
@@ -26,15 +27,16 @@ class SDVideo:
     @prompts(
         name="SDVideo (Stable Diffusion) generate video or gif or live photos from image",
         description="useful when you want to generate short videos, gifs or live photos with images"
-        "The input to this tool should be a string representing the image path.",
+        "The input to this tool should be a string representing the image path."
+        "The string should not contain any description of the image just the file path",
     )
     def inference(
         self,
         image_path,
-        height=512,
-        width=512,
-        decode_chunk_size=8,
-        motion_bucket_id=100,
+        height=576,
+        width=1024,
+        decode_chunk_size=16,
+        motion_bucket_id=50,
         noise_aug_strength=0.001,
         fps=7,
     ):

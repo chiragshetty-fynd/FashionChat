@@ -55,7 +55,7 @@ class SDInpainting:
         height=1024,
         width=1024,
         num_inference_steps=50,
-        guidance_scale=20.,
+        guidance_scale=20.0,
         strength=0.99,
         enhance=True,
     ):
@@ -66,7 +66,7 @@ class SDInpainting:
         mask = Image.open(mask_path)
         image = Image.open(image_path)
         prompt = prompt if not enhance else PromptEnhancer.enhance(prompt)
-        prompt = f'{prompt}, {self.a_prompt}'
+        prompt = f"{prompt}, {self.a_prompt}"
         image = self.inpaint(
             prompt=prompt,
             negative_prompt=self.n_prompt,
