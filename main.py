@@ -29,7 +29,7 @@ if __name__ == "__main__":
         # default="ImageCaptioning_cuda:0",
         # default="VirtualTryon_cuda:0,Text2Image_cuda:0",
         # default="VirtualTryon_cuda:0,DalleInpainting_cuda:0,Text2Image_cuda:0,ScribbleText2Image_cuda:0,SDInpainting_cuda:0,Image2Canny_cpu,Image2Line_cpu,Image2Scribble_cpu,Image2Pose_cpu,DalleGenerate_cpu",
-        default="DalleInpainting_cuda:0,ScribbleText2Image_cuda:0,SDInpainting_cuda:0,Image2Canny_cpu,Image2Line_cpu,Image2Scribble_cpu,Image2Pose_cpu,DalleGenerate_cpu",
+        default="VirtualTryon_cuda:0,DalleInpainting_cuda:0,ScribbleText2Image_cuda:0,SDInpainting_cuda:0,Image2Canny_cpu,Image2Line_cpu,Image2Scribble_cpu,Image2Pose_cpu,DalleGenerate_cpu",
     )
     args = parser.parse_args()
     bot = ConversationBot(load_dict=args.load)

@@ -15,6 +15,9 @@ services:
       - 8080
       - 8888
     restart: "always"
+    depends_on:
+      virtual_tryon:
+        condition: service_started
 
   openai_hub:
     image: openai_hub:v1
@@ -33,6 +36,9 @@ services:
     env_file: .env
     container_name: virtual_tryon
     runtime: nvidia
+    depends_on:
+      openai_hub:
+        condition: service_started
     volumes:
       - ./ckpts:/workspace/ckpts
       - ./image:/workspace/image
